@@ -1,0 +1,6 @@
+{
+  "name": "Sahayog",
+  "description": "A platform connecting verified NGOs with volunteers and donors.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

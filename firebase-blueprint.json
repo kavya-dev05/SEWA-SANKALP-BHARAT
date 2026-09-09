@@ -1,0 +1,42 @@
+{
+  "collections": [
+    {
+      "name": "users",
+      "description": "User profiles",
+      "fields": [
+        { "name": "uid", "type": "string" },
+        { "name": "email", "type": "string" },
+        { "name": "name", "type": "string" },
+        { "name": "role", "type": "string" },
+        { "name": "city", "type": "string" },
+        { "name": "createdAt", "type": "timestamp" }
+      ]
+    },
+    {
+      "name": "donations",
+      "description": "User donations (monetary or physical)",
+      "fields": [
+        { "name": "userId", "type": "string" },
+        { "name": "type", "type": "string" },
+        { "name": "amount", "type": "number", "required": false },
+        { "name": "item", "type": "string", "required": false },
+        { "name": "qty", "type": "number", "required": false },
+        { "name": "cause", "type": "string" },
+        { "name": "status", "type": "string" },
+        { "name": "ngoName", "type": "string" },
+        { "name": "createdAt", "type": "timestamp" }
+      ]
+    },
+    {
+      "name": "volunteer_engagements",
+      "description": "Volunteer engagements",
+      "fields": [
+        { "name": "userId", "type": "string" },
+        { "name": "ngoName", "type": "string" },
+        { "name": "role", "type": "string" },
+        { "name": "status", "type": "string" },
+        { "name": "createdAt", "type": "timestamp" }
+      ]
+    }
+  ]
+}
