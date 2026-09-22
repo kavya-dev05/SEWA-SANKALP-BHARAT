@@ -1,6 +1,6 @@
 {
-  "name": "Sahayog",
-  "description": "A platform connecting verified NGOs with volunteers and donors.",
+  "name": "Sewa Sankalp Bharat",
+  "description": "Sewa Sankalp Bharat — Refining the act of giving. A platform connecting verified NGOs with volunteers and donors across India.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

@@ -1,16 +1,72 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+
+    // ─── Users ────────────────────────────────────────────────────────────────
+    // Users can only read/write their own profile
     match /users/{userId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
+      // Admins can read any user (for the admin panel)
+      allow read: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
     }
+
+    // ─── Donations ────────────────────────────────────────────────────────────
+    // Donors can only see their own donations; write is locked to their uid
     match /donations/{donationId} {
       allow read: if request.auth != null && request.auth.uid == resource.data.userId;
-      allow write: if request.auth != null && request.auth.uid == request.resource.data.userId;
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
+      allow update, delete: if false; // only server-side via Admin SDK
+      // Admins can read all donations
+      allow read: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
     }
+
+    // ─── NGOs ─────────────────────────────────────────────────────────────────
+    // Any authenticated user can read NGO listings (for matching engine)
+    // Only the server (Admin SDK) can write; frontend reads only
+    match /ngos/{ngoId} {
+      allow read: if request.auth != null;
+      allow write: if false; // server-side only via Admin SDK
+    }
+
+    // ─── Volunteer Opportunities ───────────────────────────────────────────────
+    // Publicly readable by authenticated users; server-only writes
+    match /volunteer_opportunities/{oppId} {
+      allow read: if request.auth != null;
+      allow write: if false; // server-side only via Admin SDK
+    }
+
+    // ─── Volunteer Engagements ────────────────────────────────────────────────
+    // Users can read/write their own engagements; NGOs can read engagements targeting them
     match /volunteer_engagements/{engId} {
       allow read: if request.auth != null && request.auth.uid == resource.data.userId;
-      allow write: if request.auth != null && request.auth.uid == request.resource.data.userId;
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
+      allow update, delete: if false;
     }
+
+    // ─── NGO Needs (resource & volunteer requests posted by NGOs) ─────────────
+    // Any authenticated user can read needs (they appear in the donate matching)
+    // Only the owning NGO user can write their own needs (via server, uid check)
+    match /ngo_needs/{needId} {
+      allow read: if request.auth != null;
+      allow write: if false; // server-side only
+    }
+
+    // ─── Beneficiary Requests ─────────────────────────────────────────────────
+    // Only the submitting beneficiary and admins can read; create locked to author
+    match /beneficiary_requests/{reqId} {
+      allow read: if request.auth != null && request.auth.uid == resource.data.userId;
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
+      allow update, delete: if false;
+      // Admins can read all
+      allow read: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+    }
+
+    // ─── Notifications ────────────────────────────────────────────────────────
+    // Only the target user (ngoUserId) can read their notifications
+    match /notifications/{notifId} {
+      allow read: if request.auth != null && request.auth.uid == resource.data.ngoUserId;
+      allow write: if false; // server-side only
+    }
+
   }
 }

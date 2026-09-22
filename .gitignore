@@ -1,8 +1,39 @@
+# ── Dependencies ──────────────────────────────────────────────────────────────
 node_modules/
-build/
+
+# ── Build outputs ─────────────────────────────────────────────────────────────
 dist/
+build/
 coverage/
-.DS_Store
-*.log
-.env*
+
+# ── Environment variables (CRITICAL — contains API keys & secrets) ─────────────
+.env
+.env.*
 !.env.example
+
+# ── Firebase Service Account Key (CRITICAL — never commit this) ───────────────
+serviceAccountKey.json
+*serviceAccount*.json
+firebase-admin-*.json
+
+# ── Firebase local emulator data ──────────────────────────────────────────────
+.firebase/
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
+
+# ── OS & editor junk ─────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+*.log
+
+# ── IDE folders ───────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+
+# ── TypeScript cache ──────────────────────────────────────────────────────────
+*.tsbuildinfo
+
+# ── Lock files (keep only one — bun.lock is already here) ────────────────────
+# Uncomment below if you want to exclude package-lock.json (recommended if using bun)
+# package-lock.json

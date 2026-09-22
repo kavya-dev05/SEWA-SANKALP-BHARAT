@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { NavLink, Outlet, useNavigate } from 'react-router-dom';
-import { useAuth, UserRole } from '../context/AuthContext';
+import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import { Toast } from './Toast';
 import { AuthModal } from './AuthModal';
 
 export default function Layout() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [toastMsg, setToastMsg] = useState('');
@@ -54,14 +55,14 @@ export default function Layout() {
       )}
 
       <nav>
+        {/* Logo with real image */}
         <div className="nav-logo" onClick={() => { navigate('/'); closeMobileNav(); }}>
-          <div className="nav-logo-mark">
-            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-              <path d="M9 2L15.5 6V12L9 16L2.5 12V6L9 2Z" stroke="white" strokeWidth="1.5" strokeLinejoin="round" fill="none"/>
-              <circle cx="9" cy="9" r="2" fill="white"/>
-            </svg>
-          </div>
-          <span className="nav-logo-text">Sahayog</span>
+          <img
+            src="/logo.png"
+            alt="Sewa Sankalp Bharat Logo"
+            className="nav-logo-img"
+          />
+          <span className="nav-logo-text">Sewa Sankalp Bharat</span>
         </div>
         
         <ul className="nav-links">
@@ -100,14 +101,20 @@ export default function Layout() {
       </div>
 
       <main>
-        <Outlet context={{ showToast, openAuthModal: () => setIsAuthModalOpen(true) }} />
+        <div key={location.pathname} className="page-transition">
+          <Outlet context={{ showToast, openAuthModal: () => setIsAuthModalOpen(true) }} />
+        </div>
       </main>
 
       <footer>
         <div className="footer-grid">
           <div>
-            <div className="footer-brand">Sahayog.</div>
-            <p className="footer-tagline">A platform that connects verified needs with money, resources, time, and skills — transparently.</p>
+            {/* Footer logo */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
+              <img src="/logo.png" alt="Sewa Sankalp Bharat" style={{ width: '44px', height: '44px', borderRadius: '50%', objectFit: 'cover' }} />
+              <div className="footer-brand" style={{ margin: 0 }}>Sewa Sankalp Bharat</div>
+            </div>
+            <p className="footer-tagline">Refining the act of giving — connecting verified needs with money, resources, time, and skills across India.</p>
           </div>
           <div>
             <div className="footer-col-head">Platform</div>
@@ -130,15 +137,15 @@ export default function Layout() {
           <div>
             <div className="footer-col-head">Organisation</div>
             <ul className="footer-list">
-              <li><a style={{cursor: 'pointer'}} onClick={() => showToast('Register NGO feature coming soon!')}>Register NGO</a></li>
+              <li><a style={{cursor: 'pointer'}} onClick={() => showToast('Register your NGO via the Get started button!')}>Register NGO</a></li>
               <li><a style={{cursor: 'pointer'}} onClick={() => showToast('NGO dashboard in Profile section!')}>NGO dashboard</a></li>
-              <li><a style={{cursor: 'pointer'}} onClick={() => showToast('Post a need — feature in progress')}>Post a need</a></li>
+              <li><a style={{cursor: 'pointer'}} onClick={() => showToast('Post a need from your NGO dashboard!')}>Post a need</a></li>
               <li><a style={{cursor: 'pointer'}} onClick={() => showToast('Submit report — feature in progress')}>Submit report</a></li>
             </ul>
           </div>
         </div>
         <div className="footer-bottom">
-          <div className="footer-copy">© 2026 <span>Sahayog</span> — Built to connect verified needs with genuine giving.</div>
+          <div className="footer-copy">© 2026 <span>Sewa Sankalp Bharat</span> — Refining the act of giving.</div>
         </div>
       </footer>
     </>

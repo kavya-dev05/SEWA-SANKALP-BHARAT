@@ -9,6 +9,7 @@ import Impact from './pages/Impact';
 import Donate from './pages/Donate';
 import Volunteer from './pages/Volunteer';
 import Profile from './pages/Profile';
+import Admin from './pages/Admin';
 import { AuthProvider } from './context/AuthContext';
 
 export default function App() {
@@ -25,6 +26,7 @@ export default function App() {
             <Route path="donate" element={<Donate />} />
             <Route path="volunteer" element={<Volunteer />} />
             <Route path="profile" element={<Profile />} />
+            <Route path="admin" element={<Admin />} />
           </Route>
         </Routes>
       </BrowserRouter>

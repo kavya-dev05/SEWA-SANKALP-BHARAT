@@ -22,7 +22,7 @@ export default function Home() {
             Verified giving platform
           </div>
           <h1 className="hero-h1">Where your contribution meets <em>real need</em></h1>
-          <p className="hero-sub">Sahayog intelligently connects money, resources, time, and skills with verified beneficiaries — so nothing is wasted and every contribution counts.</p>
+          <p className="hero-sub">Sewa Sankalp Bharat intelligently connects money, resources, time, and skills with verified NGO campaigns — so nothing is wasted and every contribution counts.</p>
           <div className="hero-actions">
             <button className="btn-primary" onClick={() => navigate('/donate')}>
               Start contributing
@@ -56,7 +56,7 @@ export default function Home() {
               </svg>
             </div>
             <div className="flow-text">
-              <div className="flow-name">Beneficiary verified</div>
+              <div className="flow-name">NGO need documented</div>
               <div className="flow-meta">20 children's clothes needed · Kanpur</div>
             </div>
           </div>
@@ -111,7 +111,7 @@ export default function Home() {
         <div className="section-header">
           <span className="section-eyebrow">Built on trust</span>
           <h2 className="section-h2">Every side of the platform is verified</h2>
-          <p className="section-sub">From donors to NGOs to beneficiaries — the entire ecosystem is designed to eliminate doubt and enforce accountability at every step.</p>
+          <p className="section-sub">From donors to NGOs to volunteers — the entire ecosystem is designed to eliminate doubt and enforce accountability at every step.</p>
         </div>
         <div className="trust-grid">
           <div className="trust-cell">
@@ -122,12 +122,12 @@ export default function Home() {
           <div className="trust-cell">
             <div className="trust-icon"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><circle cx="11" cy="8" r="3.5" stroke="#2e6b5e" strokeWidth="1.3" fill="none"/><path d="M4.5 19c0-3.59 2.91-6.5 6.5-6.5s6.5 2.91 6.5 6.5" stroke="#2e6b5e" strokeWidth="1.3" strokeLinecap="round" fill="none"/><path d="M15 5l1.5 1.5L19 4" stroke="#2e6b5e" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg></div>
             <div className="trust-title">Verified needs</div>
-            <p className="trust-text">Beneficiary needs are documented and confirmed by the NGO before appearing on the platform. No unverified requests are shown.</p>
+            <p className="trust-text">NGO campaigns are reviewed and verified by platform admins before appearing on the platform. Only documented, genuine needs receive contributions.</p>
           </div>
           <div className="trust-cell">
             <div className="trust-icon"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><rect x="3.75" y="2.75" width="14.5" height="16.5" rx="2" stroke="#2e6b5e" strokeWidth="1.3" fill="none"/><path d="M7 7h8M7 10.5h8M7 14h5" stroke="#2e6b5e" strokeWidth="1.3" strokeLinecap="round"/></svg></div>
             <div className="trust-title">Utilization reports</div>
-            <p className="trust-text">NGOs are required to submit reports showing how every donation — money, goods, or volunteer time — was used and how many beneficiaries were reached.</p>
+            <p className="trust-text">NGOs are required to submit reports showing how every donation — money, goods, or volunteer time — was used and how many people were reached.</p>
           </div>
           <div className="trust-cell">
             <div className="trust-icon"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><circle cx="10" cy="10" r="7.25" stroke="#2e6b5e" strokeWidth="1.3" fill="none"/><path d="M15.5 15.5L19.5 19.5" stroke="#2e6b5e" strokeWidth="1.5" strokeLinecap="round"/><path d="M7.5 10h5M10 7.5v5" stroke="#2e6b5e" strokeWidth="1.3" strokeLinecap="round"/></svg></div>
@@ -139,8 +139,8 @@ export default function Home() {
 
       <section id="cta">
         <div>
-          <span className="section-eyebrow">Join Sahayog</span>
-          <h2 className="section-h2">Your contribution — money, goods, or time — reaches a verified need</h2>
+          <span className="section-eyebrow">Join Sewa Sankalp Bharat</span>
+          <h2 className="section-h2">Your contribution — money, goods, or time — reaches a verified NGO need</h2>
           <p className="section-sub">Sign up as a donor, an NGO, or a volunteer. The platform finds the right match so your effort creates real, documented change.</p>
         </div>
         <div className="cta-btns">

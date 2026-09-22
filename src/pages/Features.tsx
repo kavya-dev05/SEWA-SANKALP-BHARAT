@@ -17,8 +17,8 @@ export default function Features() {
               <circle cx="11" cy="11" r="9.25" stroke="#2e6b5e" strokeWidth="1.25" fill="none"/>
             </svg>
           </div>
-          <div className="feature-title">Beneficiary Verification</div>
-          <p className="feature-desc">NGOs review and verify beneficiary claims before they appear on the platform. Only genuine, documented needs receive contributions.</p>
+          <div className="feature-title">NGO Campaign Verification</div>
+          <p className="feature-desc">Every NGO is reviewed and approved by platform admins before campaigns go live. Only genuine, documented organisations receive contributions.</p>
           <span className="feature-pill fp-sage">Trust layer</span>
         </div>
         <div className="feature-cell">
