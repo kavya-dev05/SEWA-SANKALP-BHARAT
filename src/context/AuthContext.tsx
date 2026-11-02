@@ -1,4 +1,3 @@
-
 import React, {
   createContext,
   useContext,
@@ -7,6 +6,7 @@ import React, {
   ReactNode,
 } from 'react';
 import { apiUrl } from '../lib/api';
+import localFirebaseConfig from '../../firebase-applet-config.json';
 
 import { initializeApp, FirebaseApp, getApp, getApps } from 'firebase/app';
 
@@ -74,6 +74,18 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+function initFirebaseClient(customConfig?: any) {
+  const config = customConfig || localFirebaseConfig;
+  const app: FirebaseApp = getApps().length
+    ? getApp()
+    : initializeApp(config);
+
+  return {
+    auth: getAuth(app),
+    db: getFirestore(app),
+  };
+}
+
 export const AuthProvider = ({
   children,
 }: {
@@ -82,105 +94,93 @@ export const AuthProvider = ({
   const [user, setUser] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Initialize immediately with bundled config so Firebase is never null
   const [firebase, setFirebase] = useState<{
     auth: Auth;
     db: Firestore;
-  } | null>(null);
+  }>(() => initFirebaseClient());
 
   useEffect(() => {
     let active = true;
-    let unsubscribe: (() => void) | undefined;
 
-    const initializeFirebase = async () => {
-      try {
-        const response = await fetch(apiUrl('/api/firebase-config'));
-
-        if (!response.ok) {
-          throw new Error(
-            `Failed to load Firebase config: ${response.status}`
-          );
+    // Optional background check for dynamic config from backend
+    fetch(apiUrl('/api/firebase-config'))
+      .then((res) => (res.ok ? res.json() : null))
+      .then((remoteConfig) => {
+        if (
+          remoteConfig &&
+          remoteConfig.apiKey &&
+          remoteConfig.apiKey !== localFirebaseConfig.apiKey
+        ) {
+          const dynamicClient = initFirebaseClient(remoteConfig);
+          if (active) setFirebase(dynamicClient);
         }
+      })
+      .catch(() => {
+        // Fallback to bundled localFirebaseConfig (already initialized)
+      });
 
-        const config = await response.json();
-
-        const app: FirebaseApp = getApps().length
-          ? getApp()
-          : initializeApp(config);
-
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-
-        if (!active) return;
-
-        setFirebase({ auth, db });
-
-        unsubscribe = onAuthStateChanged(
-          auth,
-          async (firebaseUser) => {
-            try {
-              if (!firebaseUser) {
-                if (active) setUser(null);
-                return;
-              }
-
-              const userDoc = await getDoc(
-                doc(db, 'users', firebaseUser.uid)
-              );
-
-              if (!active) return;
-
-              if (userDoc.exists()) {
-                setUser(userDoc.data() as UserProfile);
-              } else {
-                setUser({
-                  uid: firebaseUser.uid,
-                  email: firebaseUser.email || '',
-                  name: firebaseUser.displayName || 'User',
-                  role: 'donor',
-                });
-              }
-            } catch (error) {
-              console.error(
-                'Failed to load user profile from Firestore:',
-                error
-              );
-
-              if (active) setUser(null);
-            } finally {
-              if (active) setLoading(false);
-            }
-          },
-          (error) => {
-            console.error('Firebase auth state error:', error);
-            if (active) {
-              setUser(null);
-              setLoading(false);
-            }
+    const unsubscribe = onAuthStateChanged(
+      firebase.auth,
+      async (firebaseUser) => {
+        try {
+          if (!firebaseUser) {
+            if (active) setUser(null);
+            return;
           }
-        );
-      } catch (error) {
-        console.error('Failed to initialize Firebase:', error);
 
-        if (active) setLoading(false);
+          // Try fetching full profile from Firestore
+          try {
+            const userDoc = await getDoc(
+              doc(firebase.db, 'users', firebaseUser.uid)
+            );
+
+            if (!active) return;
+
+            if (userDoc.exists()) {
+              setUser(userDoc.data() as UserProfile);
+              return;
+            }
+          } catch (firestoreErr) {
+            console.warn(
+              'Firestore profile fetch note (check Firestore rules):',
+              firestoreErr
+            );
+          }
+
+          // Graceful fallback profile from Firebase Auth user
+          if (active) {
+            setUser({
+              uid: firebaseUser.uid,
+              email: firebaseUser.email || '',
+              name: firebaseUser.displayName || 'User',
+              role: 'donor',
+            });
+          }
+        } catch (error) {
+          console.error('Firebase auth state processing error:', error);
+          if (active) setUser(null);
+        } finally {
+          if (active) setLoading(false);
+        }
+      },
+      (error) => {
+        console.error('Firebase auth state error:', error);
+        if (active) {
+          setUser(null);
+          setLoading(false);
+        }
       }
-    };
-
-    initializeFirebase();
+    );
 
     return () => {
       active = false;
-      unsubscribe?.();
+      unsubscribe();
     };
-  }, []);
+  }, [firebase.auth, firebase.db]);
 
   const login = async (email: string, pass: string) => {
-    if (!firebase) throw new Error('Firebase not initialized');
-
-    await signInWithEmailAndPassword(
-      firebase.auth,
-      email,
-      pass
-    );
+    await signInWithEmailAndPassword(firebase.auth, email, pass);
   };
 
   const register = async (
@@ -195,8 +195,6 @@ export const AuthProvider = ({
       orgRegNumber: string;
     }
   ) => {
-    if (!firebase) throw new Error('Firebase not initialized');
-
     const cred = await createUserWithEmailAndPassword(
       firebase.auth,
       email,
@@ -220,35 +218,32 @@ export const AuthProvider = ({
         : {}),
     };
 
-    await setDoc(
-      doc(firebase.db, 'users', cred.user.uid),
-      {
+    try {
+      await setDoc(doc(firebase.db, 'users', cred.user.uid), {
         ...userProfile,
         createdAt: new Date(),
-      }
-    );
+      });
+    } catch (err) {
+      console.warn('Failed to write profile to Firestore (check security rules):', err);
+    }
 
     setUser(userProfile);
   };
 
-  const loginWithGoogle = async (
-    role: UserRole = 'donor'
-  ) => {
-    if (!firebase) throw new Error('Firebase not initialized');
-
+  const loginWithGoogle = async (role: UserRole = 'donor') => {
     const provider = new GoogleAuthProvider();
     provider.setCustomParameters({ prompt: 'select_account' });
 
-    const cred = await signInWithPopup(
-      firebase.auth,
-      provider
-    );
+    const cred = await signInWithPopup(firebase.auth, provider);
 
-    const userDocRef = doc(
-      firebase.db,
-      'users',
-      cred.user.uid
-    );
+    const fallbackProfile: UserProfile = {
+      uid: cred.user.uid,
+      name: cred.user.displayName || 'User',
+      email: cred.user.email || '',
+      role,
+    };
+
+    const userDocRef = doc(firebase.db, 'users', cred.user.uid);
 
     try {
       const userDoc = await getDoc(userDocRef);
@@ -258,44 +253,34 @@ export const AuthProvider = ({
         return;
       }
 
-      const userProfile: UserProfile = {
-        uid: cred.user.uid,
-        name: cred.user.displayName || 'User',
-        email: cred.user.email || '',
-        role,
-      };
-
       await setDoc(userDocRef, {
-        ...userProfile,
+        ...fallbackProfile,
         createdAt: new Date(),
       });
 
-      setUser(userProfile);
+      setUser(fallbackProfile);
     } catch (error) {
-      console.error(
-        'Google sign-in succeeded, but Firestore profile access failed:',
+      console.warn(
+        'Google sign-in succeeded, but Firestore profile access failed (check Firestore rules):',
         error
       );
-
-      throw error;
+      // Fallback so user is not blocked
+      setUser(fallbackProfile);
     }
   };
 
   const logout = async () => {
-    if (!firebase) return;
-
     await signOut(firebase.auth);
     setUser(null);
   };
 
   const getToken = async (): Promise<string | null> => {
-    if (!firebase?.auth.currentUser) return null;
-
+    if (!firebase.auth.currentUser) return null;
     return firebase.auth.currentUser.getIdToken();
   };
 
   const refreshUser = async () => {
-    if (!firebase?.auth.currentUser) return;
+    if (!firebase.auth.currentUser) return;
 
     const currentUser = firebase.auth.currentUser;
 
@@ -314,8 +299,6 @@ export const AuthProvider = ({
   };
 
   const sendPasswordReset = async (email: string) => {
-    if (!firebase) throw new Error('Firebase not initialized');
-
     await sendPasswordResetEmail(firebase.auth, email);
   };
 
