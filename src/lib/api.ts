@@ -3,13 +3,24 @@
  * Central API utility for Sewa Sankalp Bharat / SAHYOG.
  *
  * In development, all /api/* calls are proxied by Vite to localhost:3000.
- * In production (Vercel), VITE_API_URL is set to the Railway backend URL,
- * so every call hits https://<backend>.railway.app/api/*.
+ * In production (Vercel), VITE_API_URL is used.
+ * If VITE_API_URL is not set, it defaults to the deployed Render backend URL.
  */
 
-// Set VITE_API_URL in your Vercel project env vars to the Railway backend URL.
-// Example: https://sahyog-backend.railway.app
-const BASE = (import.meta.env.VITE_API_URL ?? '').replace(/\/$/, '');
+const DEFAULT_RENDER_BACKEND = 'https://sahyog-backend.onrender.com';
+
+const rawApiUrl = (import.meta.env.VITE_API_URL || '').trim();
+
+// On localhost during dev, empty base lets Vite dev server proxy /api to :3000.
+// In production, fallback to Render backend if env var is missing.
+const isLocalhost =
+  typeof window !== 'undefined' &&
+  (window.location.hostname === 'localhost' ||
+    window.location.hostname === '127.0.0.1');
+
+const BASE = (
+  rawApiUrl || (!isLocalhost ? DEFAULT_RENDER_BACKEND : '')
+).replace(/\/$/, '');
 
 /**
  * Build a full URL for an API path.
