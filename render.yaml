@@ -1,0 +1,28 @@
+services:
+  - type: web
+    name: sahyog-backend
+    runtime: node
+    region: singapore   # closest to India
+    plan: free
+    buildCommand: npm install && npm run build:backend
+    startCommand: node dist/server.cjs
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000        # Render always uses 10000 internally; it maps to 443 externally
+      - key: GEMINI_API_KEY
+        sync: false         # set manually in Render dashboard
+      - key: RAZORPAY_KEY_ID
+        sync: false
+      - key: RAZORPAY_KEY_SECRET
+        sync: false
+      - key: ADMIN_BOOTSTRAP_SECRET
+        sync: false
+      - key: FRONTEND_URL
+        sync: false         # your Vercel URL — set after Vercel deploy
+      - key: FIREBASE_SERVICE_ACCOUNT_JSON
+        sync: false         # paste full serviceAccountKey.json content
+      - key: FIREBASE_CLIENT_CONFIG_JSON
+        sync: false         # paste full firebase-applet-config.json content
+

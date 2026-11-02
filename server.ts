@@ -1,4 +1,4 @@
-﻿import dotenv from 'dotenv';
+import dotenv from 'dotenv';
 dotenv.config();
 import express from 'express';
 import path from 'path';
@@ -64,24 +64,46 @@ async function startServer() {
   const PORT = Number(process.env.PORT) || 3000;
   app.use(express.json());
 
-  // ─── CORS — allow the Vercel frontend ────────────────────────────────────
+  // ─── CORS — allow Vercel frontend & local dev ─────────────────────────────
+  const configuredOrigins = process.env.FRONTEND_URL
+    ? process.env.FRONTEND_URL.split(',').map((u: string) => u.trim().replace(/\/$/, ''))
+    : [];
   const allowedOrigins = [
     'http://localhost:5173',
     'http://localhost:3000',
-    ...(process.env.FRONTEND_URL ? [process.env.FRONTEND_URL] : []),
+    ...configuredOrigins,
   ];
+
   app.use((req: any, res: any, next: any) => {
     const origin = req.headers.origin;
-    if (!origin || allowedOrigins.some(o => origin.startsWith(o))) {
-      res.setHeader('Access-Control-Allow-Origin', origin || '*');
+    if (origin) {
+      let isAllowed =
+        allowedOrigins.includes(origin) ||
+        allowedOrigins.some((o: string) => origin.startsWith(o));
+
+      try {
+        const parsed = new URL(origin);
+        if (parsed.hostname.endsWith('.vercel.app')) {
+          isAllowed = true;
+        }
+      } catch {
+        // Fall through
+      }
+
+      res.setHeader('Access-Control-Allow-Origin', isAllowed ? origin : origin);
     } else {
-      res.setHeader('Access-Control-Allow-Origin', origin);
+      res.setHeader('Access-Control-Allow-Origin', '*');
     }
     res.setHeader('Access-Control-Allow-Credentials', 'true');
     res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PATCH,PUT,DELETE,OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization,X-Admin-Secret');
     if (req.method === 'OPTIONS') return res.sendStatus(204);
     next();
+  });
+
+  // ─── Health check ────────────────────────────────────────────────────────
+  app.get('/api/health', (_req, res) => {
+    res.json({ status: 'ok', service: 'SAHYOG Backend', timestamp: new Date().toISOString() });
   });
 
   // ─── Public: Firebase config ──────────────────────────────────────────────
@@ -744,10 +766,30 @@ async function startServer() {
     app.use(vite.middlewares);
   } else {
     const distPath = path.join(process.cwd(), 'dist');
-    app.use(express.static(distPath));
-    app.get('*', (req, res) => {
-      res.sendFile(path.join(distPath, 'index.html'));
-    });
+    const indexPath = path.join(distPath, 'index.html');
+    if (fs.existsSync(indexPath)) {
+      app.use(express.static(distPath));
+      app.get('*', (_req, res) => {
+        res.sendFile(indexPath);
+      });
+    } else {
+      // Backend-only mode (Render / Railway with frontend on Vercel)
+      app.get('/', (_req, res) => {
+        res.json({
+          status: 'ok',
+          service: 'SAHYOG Backend API',
+          message: 'Server is running successfully. Frontend is hosted on Vercel.',
+          endpoints: {
+            health: '/api/health',
+            config: '/api/config',
+            firebaseConfig: '/api/firebase-config'
+          }
+        });
+      });
+      app.all('*', (req, res) => {
+        res.status(404).json({ error: `Route ${req.method} ${req.path} not found` });
+      });
+    }
   }
 
   app.listen(PORT, '0.0.0.0', () => {
