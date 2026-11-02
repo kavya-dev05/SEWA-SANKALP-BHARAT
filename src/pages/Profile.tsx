@@ -1,18 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-
-// ─── Shared helper ─────────────────────────────────────────────────────────
-function authFetch(url: string, token: string, options: RequestInit = {}) {
-  return fetch(url, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
-      ...(options.headers || {}),
-    },
-  });
-}
+import { authFetch } from '../lib/api';
 
 // ─── Status badge colours ──────────────────────────────────────────────────
 function statusStyle(status: string) {

@@ -1,17 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-
-function authFetch(url: string, token: string, options: RequestInit = {}) {
-  return fetch(url, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
-      ...(options.headers || {}),
-    },
-  });
-}
+import { authFetch } from '../lib/api';
 
 type VerificationStatus = 'pending' | 'approved' | 'rejected';
 

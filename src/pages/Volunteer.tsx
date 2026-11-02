@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { apiUrl } from '../lib/api';
 
 export default function Volunteer() {
   const { showToast } = useOutletContext<{ showToast: (msg: string) => void }>();
@@ -21,7 +22,7 @@ export default function Volunteer() {
     if (!user) return showToast('Please sign in to volunteer.');
     try {
       const token = await getToken();
-      const res = await fetch('/api/volunteers', {
+      const res = await fetch(apiUrl('/api/volunteers'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -48,7 +49,7 @@ export default function Volunteer() {
     showToast('AI is finding the best matches...');
     
     try {
-      const res = await fetch('/api/match-volunteers', {
+      const res = await fetch(apiUrl('/api/match-volunteers'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ skills: selSkills, loc: volLoc, avail: selAvail, causes: selCauses })

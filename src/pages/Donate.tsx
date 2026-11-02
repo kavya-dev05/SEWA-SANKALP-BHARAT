@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { apiUrl } from '../lib/api';
 
 export default function Donate() {
   const { showToast } = useOutletContext<{ showToast: (msg: string) => void }>();
@@ -22,7 +23,7 @@ export default function Donate() {
   const [confirmedNGO, setConfirmedNGO] = useState<{ name: string; role: string } | null>(null);
 
   useEffect(() => {
-    fetch('/api/config')
+    fetch(apiUrl('/api/config'))
       .then(r => r.json())
       .then(d => setRazorpayKeyId(d.razorpayKeyId || ''))
       .catch(() => {});
@@ -38,7 +39,7 @@ export default function Donate() {
     try {
       const token = await getToken();
 
-      const orderRes = await fetch('/api/create-order', {
+      const orderRes = await fetch(apiUrl('/api/create-order'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ amount: Number(amt), cause: selectedCause })
@@ -56,7 +57,7 @@ export default function Donate() {
         prefill: { email: user.email, name: user.name },
         theme: { color: '#2e6b5e' },
         handler: async (response: any) => {
-          const verifyRes = await fetch('/api/verify-payment', {
+          const verifyRes = await fetch(apiUrl('/api/verify-payment'), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({
@@ -90,7 +91,7 @@ export default function Donate() {
     if (!user) return showToast('Please sign in to connect with an NGO.');
     try {
       const token = await getToken();
-      const res = await fetch('/api/donations', {
+      const res = await fetch(apiUrl('/api/donations'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ type: 'physical', item: revItem, qty: Number(revQty), ngoName, cause: revCauses.join(',') })
@@ -117,7 +118,7 @@ export default function Donate() {
     setConfirmedNGO(null);
     showToast('AI is finding the best matches...');
     try {
-      const res = await fetch('/api/match-ngos', {
+      const res = await fetch(apiUrl('/api/match-ngos'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ item: revItem, qty: revQty, loc: revLoc, causes: revCauses })

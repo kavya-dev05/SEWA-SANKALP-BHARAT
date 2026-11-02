@@ -1,4 +1,4 @@
-import dotenv from 'dotenv';
+﻿import dotenv from 'dotenv';
 dotenv.config();
 import express from 'express';
 import path from 'path';
@@ -12,10 +12,17 @@ import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 import { getAuth } from 'firebase-admin/auth';
 
 if (!getApps().length) {
-  const serviceAccount = JSON.parse(
-    fs.readFileSync(path.join(process.cwd(), 'serviceAccountKey.json'), 'utf8')
-  );
-  initializeApp({ credential: cert(serviceAccount) });
+  // Production (Railway): pass service account JSON as env var
+  if (process.env.FIREBASE_SERVICE_ACCOUNT_JSON) {
+    const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_JSON);
+    initializeApp({ credential: cert(serviceAccount) });
+  } else {
+    // Local dev: read from file
+    const serviceAccount = JSON.parse(
+      fs.readFileSync(path.join(process.cwd(), 'serviceAccountKey.json'), 'utf8')
+    );
+    initializeApp({ credential: cert(serviceAccount) });
+  }
 }
 
 const db = getFirestore();
@@ -54,12 +61,36 @@ async function findNGOUserByOrgName(orgName: string): Promise<string | null> {
 
 async function startServer() {
   const app = express();
-  const PORT = 3000;
+  const PORT = Number(process.env.PORT) || 3000;
   app.use(express.json());
+
+  // ─── CORS — allow the Vercel frontend ────────────────────────────────────
+  const allowedOrigins = [
+    'http://localhost:5173',
+    'http://localhost:3000',
+    ...(process.env.FRONTEND_URL ? [process.env.FRONTEND_URL] : []),
+  ];
+  app.use((req: any, res: any, next: any) => {
+    const origin = req.headers.origin;
+    if (!origin || allowedOrigins.some(o => origin.startsWith(o))) {
+      res.setHeader('Access-Control-Allow-Origin', origin || '*');
+    } else {
+      res.setHeader('Access-Control-Allow-Origin', origin);
+    }
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PATCH,PUT,DELETE,OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization');
+    if (req.method === 'OPTIONS') return res.sendStatus(204);
+    next();
+  });
 
   // ─── Public: Firebase config ──────────────────────────────────────────────
   app.get('/api/firebase-config', (req, res) => {
     try {
+      // Production: use env var
+      if (process.env.FIREBASE_CLIENT_CONFIG_JSON) {
+        return res.json(JSON.parse(process.env.FIREBASE_CLIENT_CONFIG_JSON));
+      }
       const configPath = path.join(process.cwd(), 'firebase-applet-config.json');
       if (fs.existsSync(configPath)) {
         res.json(JSON.parse(fs.readFileSync(configPath, 'utf8')));

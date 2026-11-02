@@ -6,6 +6,7 @@ import React, {
   useEffect,
   ReactNode,
 } from 'react';
+import { apiUrl } from '../lib/api';
 
 import { initializeApp, FirebaseApp, getApp, getApps } from 'firebase/app';
 
@@ -92,7 +93,7 @@ export const AuthProvider = ({
 
     const initializeFirebase = async () => {
       try {
-        const response = await fetch('/api/firebase-config');
+        const response = await fetch(apiUrl('/api/firebase-config'));
 
         if (!response.ok) {
           throw new Error(
