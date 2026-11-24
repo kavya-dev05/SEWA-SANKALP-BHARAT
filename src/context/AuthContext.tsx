@@ -80,10 +80,12 @@ function initFirebaseClient(customConfig?: any) {
     ? getApp()
     : initializeApp(config);
 
-  return {
-    auth: getAuth(app),
-    db: getFirestore(app),
-  };
+  // Use the named Firestore database ID from the config (created by AI Studio).
+  // Falling back to default only if the field is missing.
+  const dbId: string | undefined = (config as any).firestoreDatabaseId;
+  const db: Firestore = dbId ? getFirestore(app, dbId) : getFirestore(app);
+
+  return { auth: getAuth(app), db };
 }
 
 export const AuthProvider = ({

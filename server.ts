@@ -41,7 +41,13 @@ if (!getApps().length) {
   }
 }
 
-const db = getFirestore();
+// Use the named Firestore database created by AI Studio.
+// Set FIRESTORE_DATABASE_ID env var on Render; hardcoded as fallback so it
+// never breaks even if the env var is missing.
+const FIRESTORE_DB_ID =
+  process.env.FIRESTORE_DATABASE_ID ||
+  'ai-studio-3f43ba7e-40d6-43d3-a6a6-6babf2c6fc26';
+const db = getFirestore(FIRESTORE_DB_ID);
 
 const DEFAULT_RAZORPAY_KEY_ID = 'rzp_test_TaSNlHg0aa8NGV';
 const DEFAULT_RAZORPAY_KEY_SECRET = '19mQ1X5hqzal4dREOqGLyO2n';

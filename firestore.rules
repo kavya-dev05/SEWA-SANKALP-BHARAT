@@ -2,71 +2,102 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // ─── Users ────────────────────────────────────────────────────────────────
-    // Users can only read/write their own profile
+    // ─── Helper functions ────────────────────────────────────────────────────
+
+    // True if the request is from a signed-in Firebase Auth user.
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    // True if the signed-in user's UID matches the given uid.
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    // True if the signed-in user's document exists in Firestore.
+    // Using exists() before get() prevents errors for new users who have no
+    // profile document yet.
+    function userDocExists() {
+      return exists(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+
+    // True if the signed-in user has isAdmin == true in their profile.
+    // .get('isAdmin', false) returns false when the field is absent, so this
+    // is null-safe and never throws even if the doc is missing a field.
+    function isAdmin() {
+      return isSignedIn()
+        && userDocExists()
+        && get(/databases/$(database)/documents/users/$(request.auth.uid))
+             .data.get('isAdmin', false) == true;
+    }
+
+    // ─── Users ───────────────────────────────────────────────────────────────
+    // • Users can read and write (create/update) their own profile.
+    // • Admins can read and update any profile.
+    // • Nobody (not even the user) can delete their own account document;
+    //   deletions go through the Admin SDK on the server.
+    // Note: ALL other server-side writes use Firebase Admin SDK which bypasses
+    // these rules entirely — only the client SDK is restricted here.
     match /users/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
-      // Admins can read any user (for the admin panel)
-      allow read: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+      allow get:    if isOwner(userId) || isAdmin();
+      allow list:   if isAdmin();
+      allow create: if isOwner(userId);
+      allow update: if isOwner(userId) || isAdmin();
+      allow delete: if false;
     }
 
-    // ─── Donations ────────────────────────────────────────────────────────────
-    // Donors can only see their own donations; write is locked to their uid
+    // ─── Donations ───────────────────────────────────────────────────────────
+    // Donors can read their own donations and create new ones.
+    // Server (Admin SDK) handles all updates and deletes.
     match /donations/{donationId} {
-      allow read: if request.auth != null && request.auth.uid == resource.data.userId;
-      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
-      allow update, delete: if false; // only server-side via Admin SDK
-      // Admins can read all donations
-      allow read: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+      allow get:    if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow list:   if isAdmin();
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if false;
     }
 
-    // ─── NGOs ─────────────────────────────────────────────────────────────────
-    // Any authenticated user can read NGO listings (for matching engine)
-    // Only the server (Admin SDK) can write; frontend reads only
+    // ─── NGOs (publicly readable by any signed-in user) ──────────────────────
+    // All NGO data is seeded and managed by the server via Admin SDK.
     match /ngos/{ngoId} {
-      allow read: if request.auth != null;
-      allow write: if false; // server-side only via Admin SDK
+      allow read:  if isSignedIn();
+      allow write: if false;
     }
 
-    // ─── Volunteer Opportunities ───────────────────────────────────────────────
-    // Publicly readable by authenticated users; server-only writes
+    // ─── Volunteer Opportunities (publicly readable) ──────────────────────────
     match /volunteer_opportunities/{oppId} {
-      allow read: if request.auth != null;
-      allow write: if false; // server-side only via Admin SDK
+      allow read:  if isSignedIn();
+      allow write: if false;
     }
 
-    // ─── Volunteer Engagements ────────────────────────────────────────────────
-    // Users can read/write their own engagements; NGOs can read engagements targeting them
+    // ─── Volunteer Engagements ───────────────────────────────────────────────
+    // A user can read/create their own engagements.
     match /volunteer_engagements/{engId} {
-      allow read: if request.auth != null && request.auth.uid == resource.data.userId;
-      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
+      allow get:    if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow list:   if isAdmin();
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
       allow update, delete: if false;
     }
 
-    // ─── NGO Needs (resource & volunteer requests posted by NGOs) ─────────────
-    // Any authenticated user can read needs (they appear in the donate matching)
-    // Only the owning NGO user can write their own needs (via server, uid check)
+    // ─── NGO Needs (publicly readable) ───────────────────────────────────────
     match /ngo_needs/{needId} {
-      allow read: if request.auth != null;
-      allow write: if false; // server-side only
+      allow read:  if isSignedIn();
+      allow write: if false;
     }
 
-    // ─── Beneficiary Requests ─────────────────────────────────────────────────
-    // Only the submitting beneficiary and admins can read; create locked to author
+    // ─── Beneficiary Requests ────────────────────────────────────────────────
     match /beneficiary_requests/{reqId} {
-      allow read: if request.auth != null && request.auth.uid == resource.data.userId;
-      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
+      allow get:    if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow list:   if isAdmin();
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
       allow update, delete: if false;
-      // Admins can read all
-      allow read: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
     }
 
-    // ─── Notifications ────────────────────────────────────────────────────────
-    // Only the target user (ngoUserId) can read their notifications
+    // ─── Notifications ───────────────────────────────────────────────────────
+    // NGO users can read their own notifications; server writes them.
     match /notifications/{notifId} {
-      allow read: if request.auth != null && request.auth.uid == resource.data.ngoUserId;
-      allow write: if false; // server-side only
+      allow get:    if isSignedIn() && resource.data.ngoUserId == request.auth.uid;
+      allow list:   if isSignedIn() && resource.data.ngoUserId == request.auth.uid;
+      allow write:  if false;
     }
-
   }
 }
